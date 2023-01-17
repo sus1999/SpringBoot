@@ -1,0 +1,93 @@
+
+com.global.domain.Account
+
+Account domain 에 필요한 data
+  - 로그인
+  - 프로필
+  - 알림설정
+
+
+com.global.account.AccountController
+
+- GET"/signup" 요청을 받아서 account/sign-up.html 페이지에 보여줌
+- 회원 가입 폼에서 입력 받을 수 있는 정보를
+- "닉네임", "이메일", "패스워드" 폼 객체로 제공함
+
+
+com.global.config.SecurityConfig
+
+Ctrl + O (overriding)
+  ㄴ configure(http:HttpSecurity) 선택
+
+
+<test>
+
+com.global.account.AccountController 에서
+Ctrl + Shift + T : text 단축키
+
+
+- 회원가입 뷰 작성하기
+  - bootstrap
+      네비게이션
+      폼
+  - thymeleaf
+    SignUpForm 타입 객체를 폼 객체로 설정함
+  - 웹(HTML, CSS, JavaScript)
+    검증기능(validation) 설정
+      닉네임(3~20자, 입력필수)
+      이메일(이메일형식, 입력필수)
+      패스워드(8~50자, 입력필수)
+
+
+com.global.config.SecurityConfig
+
+Ctrl + O (overriding)
+  ㄴ configure(web:WebSecurity) 선택
+
+
+com.global.ConsoleMailSender 를
+@Profile("local") @Component 로 설정하고
+application.properties 파일에서
+spring.profiles.active=local 로 설정하면
+com.global.account.AccountController 에서
+private final JavaMailSender javaMailSender 를 선언하고
+signUpSubmit 메소드에서 이메일을 전송할 수 있게 됨
+
+
+
+com.global.account.AccountControllerTest
+
+실제로 mail 을 전송하는지 test 하기
+@MockBean  <-- SpringBootTest 에서 제공하는 annotation 으로,
+               Mock 객체들을 Spring 의 ApplicationContext 에 넣어줌
+               같은 type 의 Bean 이 이미 있는 경우, MockBean 으로 교체함
+JavaMailSender javaMailSender;
+
+
+회원 가입 처리 확인하기 - 입력값 오류 테스트 / 입력값 정상 테스트
+
+
+회원가입할 때 입력한
+비밀번호를 그대로(평문으로) 저장하면 아주 위험함
+ ㄴ 인코딩해서 저장해야 함
+ Account Entity 를 저장할 때 password 를 encoding 함
+           ㄴ DB 의 table
+
+Spring Security PasswordEncoder
+  - PasswordEncoderFactories.createDelegatingPasswordEncoder()
+  -    ㄴ 여러 가지 hash algorithm 을 지원하는 password encoder
+  - bcrypt  <--  default algorithm
+
+암호화/복호화(양방향) 보다는 password 를 hashing 해서 저장한 후
+서로 비교해서 맞는지 알아보면 됨 (단방향으로 문자를 변경해서 저장함)
+- 사용자들은 일반적으로 같은 비밀번호를 여러 사이트에서 동일하게
+- 사용하는 경우가 많으므로 한 곳에서 비밀번호가 hacking 당하면
+- 여러 사이트에서의 정보를 모두 도난 당할 수 있음
+- 이를 방지하기 위해서 password 를 encoding 해야 함
+
+Hashing : 특정문자를 알고리즘에 따라서 변형해서 저장한다는 의미
+
+com.global.config 에 AppConfig 클래스 작성하기
+
+
+
