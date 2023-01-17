@@ -51,4 +51,17 @@ public class Account {
     // ㄴ 네트워크 상에서의 ID 의 고유성을 보장하는 규약
     this.emailCheckToken = UUID.randomUUID().toString();
   }
+
+  public void completeSignUp() {
+    // 가입자가 입력한 이메일이 정상적으로 등록된 경우 + token 까지 확인된 경우
+    // this.setEmailVerified(true);
+    this.emailVerified = true;
+    // 가입한 시간 등록
+    // this.setJoinedAt(LocalDateTime.now());
+    this.joinedAt = LocalDateTime.now();
+  }
+
+  public boolean isValidToken(String token) {
+    return this.emailCheckToken.equals(token);
+  }
 }
