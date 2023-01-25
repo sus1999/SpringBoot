@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:fragment="head">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GlobalIT</title>
+  <link rel="stylesheet" href="/node_modules/bootstrap/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="/node_modules/font-awesome/css/font-awesome.min.css" />
+  <script src="/node_modules/jquery/dist/jquery.min.js"></script>
+  <script src="/node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/node_modules/jdenticon/dist/jdenticon.min.js"></script>
+  <style>
+    .contaniter{
+        max-width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+<nav th:fragment="main-nav"  class="navbar navbar-expand-sm navbar-dark bg-dark">
+  <a class="navbar-brand" href="/" th:href="@{/}">
+    <img src="/images/logo.png" width="40" height="40">
+  </a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item">
+        <form th:action="@{/search/study}"  class="form-line" method="get">
+          <input class="for-control mr-sm-2" name="keyword" type="search" placeholder="검색">
+        </form>
+      </li>
+    </ul>
+    <ul class="navbar-nav justify-content-end">
+      <li class="nav-item" sec:authorize="!isAuthenticated()">
+        <a class="nav-link" href="#" th:href="@{/login}">로그인</a>
+      </li>
+      <li class="nav-item" sec:authorize="!isAuthenticated()">
+        <a class="nav-link" href="#" th:href="@{/sign-up}">가입</a>
+      </li>
+      <li class="nav-item" sec:authorize="isAuthenticated()">
+        <a class="nav-link" th:href="@{/notifications}">
+          <i class="fa fa-bell-o" aria-hidden="true"></i>
+        </a>
+      </li>
+      <li class="nav-item" sec:authorize="isAuthenticated()">
+        <a class="nav-link btn btn-outline-primary" th:href="@{/notifications}">
+          <i class="fa fa-plus" aria-hidden="true"></i> study 개설</a>
+      </li>
+      <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
+        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown"
+           aria-haspopup="true" aria-expanded="false">
+          <!-- account?. : user 가 null 이 아닌 경우를 의미함 -->
+          <!-- profileImage 가 없으면 jdenticon 을 보여주고 -->
+          <svg th:if="${#strings.isEmpty(account?.profileImage)}" data-jdenticon-value="user127"
+               th:data-jdenticon-value="${#authentication.name}" width="24" height="24" />
+          <!-- profileImage 가 있으면 profileImage 를 보여줌 -->
+          <img th:if="${!#strings.isEmpty(account?.profileImage)}" th:src="${account.profileImage}"
+              width="24" height="24" class="rounded border"/>
+
+          <!--
+           <svg width="24" height="24" data-jdenticon-value="user127"
+                th:data-jdenticon-value="${#authentication.name}" class="rounded border bg-light"></svg>
+          -->
+        </a>
+        <div class="dropdown-menu dropdown-menu-sm-right" aria-labelledby="userDropDown">
+          <h6 class="dropdown-header">
+            <span sec:authentication="name">Username</span>
+          </h6>
+          <a class="dropdown-item" th:href="@{'/profile/' + ${#authentication.name}}">프로필</a>
+          <a class="dropdown-item" >스터디</a>
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item" href="#" th:href="@{'/settings/profile}">설정</a>
+          <form class="from-inline my-2 my-lg-0" action="#" th:action="@{/logout}" method="post">
+            <button class="dropdown-item" type="submit">로그아웃</button>
+          </form>
+        </div>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<footer th:fragment="footer">
+  <div class="row justify-content-center">
+    <img class="mb-2" src="/images/test.jpg" alt="" width="100">
+    <small class="d-block mb-3 text-muted">&copy; 2022</small>
+  </div>
+</footer>
+
+<div th:fragment="settings-menu (currentMenu)" class="list-group">
+  <a class="list-group-item list-group-item-action " th:classappend="${currentMenu == 'profile'} ? active" href="#" th:href="@{/settings/profile}" >프로필</a>
+  <a class="list-group-item list-group-item-action " th:classappend="${currentMenu == 'password'} ? active" href="#" th:href="@{/settings/password}" >패스워드</a>
+  <a class="list-group-item list-group-item-action " th:classappend="${currentMenu == 'notifications'} ? active" href="#" th:href="@{/settings/notifications}" >알림</a>
+  <a class="list-group-item list-group-item-action " th:classappend="${currentMenu == 'tags'} ? active" href="#" th:href="@{/settings/tags}" >관심, 주제</a>
+  <a class="list-group-item list-group-item-action " th:classappend="${currentMenu == 'zones'} ? active" href="#" th:href="@{/settings/zones}" >활동 지역</a>
+  <a class="list-group-item list-group-item-action list-group-item-danger" th:classappend="${currentMenu == 'account'} ? active" href="#" th:href="@{/settings/account}">계정</a>
+</div>
+
+<script type="application/javascript" th:fragment="form-validation">
+    (function () {
+      'use strict';
+
+      window.addEventListener('load', function(){
+        // 클래스이름이 needs-validation 인 element 들 가져오기
+        let forms = document.getElementsByClassName('needs-validation')
+
+        Array.prototype.filter.call(forms, function(form){
+          // submit 이벤트가 발생했을 때
+          form.addEventListener('submit', function(event){
+            // 해당 form 이 유효한지 검증하고, 유효하지 않으면
+            if(form.checkValidity() === false){
+              // 해당 form 이 submit 이 안 되도록 함
+              event.preventDefault();
+              event.stopPropagation();
+            }
+            // was-validated 클래스 를 추가함
+            form.classList.add('was-validated')
+          }, false)
+        })
+      }, false)
+    }())
+  </script>
+</body>
+</html>

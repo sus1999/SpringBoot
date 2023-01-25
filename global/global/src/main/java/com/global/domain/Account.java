@@ -23,6 +23,7 @@ public class Account {
   private String password;
   private boolean emailVerified;
   private String emailCheckToken;
+  private LocalDateTime emailCheckTokenGeneratedAt;
   private LocalDateTime joinedAt;
   private String bio;
   private String url;
@@ -50,6 +51,7 @@ public class Account {
     // UUID (Universally Unique Identifier)
     // ㄴ 네트워크 상에서의 ID 의 고유성을 보장하는 규약
     this.emailCheckToken = UUID.randomUUID().toString();
+    this.emailCheckTokenGeneratedAt = LocalDateTime.now();
   }
 
   public void completeSignUp() {
@@ -63,5 +65,10 @@ public class Account {
 
   public boolean isValidToken(String token) {
     return this.emailCheckToken.equals(token);
+  }
+
+  // 한 시간 이내에 이메일 보낸 이력이 있는지 없는지 확인함
+  public boolean canSendConfirmEmail() {
+    return this.emailCheckTokenGeneratedAt.isBefore(LocalDateTime.now().minusHours(1));
   }
 }

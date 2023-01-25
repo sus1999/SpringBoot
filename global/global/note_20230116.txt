@@ -451,6 +451,11 @@ C:\workspace\springboot\global\src\main\resources\static>
 
 
 
+.gitignore 에 아래 code 추가하기
+(버전관리에서 제외함)
+### NPM ###
+src/main/resources/static/node_modules
+
 
 
 pom.xml 에 아래 code (plugin) 추가
@@ -497,8 +502,869 @@ Security 설정하기
   .mvcMatchers("/node_modules/**") <-- 추가하기
 
 
+20230118
+
+[View 에서 중복되는 code 제거하기]
+
+thymeleaf fragment 사용
+
+  정의
+    th:fragment
+
+  사용
+    th:insert
+    th:replace
+
+  중복되는 부분
+    main navigation
+    head
+    footer
+
+[git - commit]
+
+index.html 위치를
+resources > templates 디렉토리로 이동
+
+thymeleaf fragment 적용
+1)
+fragments.html 의 <haed> 에
+th:fragment="head" 설정하고
+2)
+index.html 의 <head> 에
+<head th:replace="fragments.html :: head"></head> 설정
 
 
+thymeleaf fragment 를
+index, sign-up, check-email html 에 적용함
+
+
+[View 에 code 추가하기]
+
+- navigation bar 에 fontawesome icon 적용
+    https://fontawesome.com/icons
+- 이메일 인증을 완료하지 않은 사용자에게 메세지 보여주기
+    index.html 에 아래 code 추가함
+
+    <div class="alert alert-warning" role="alert" th:if="${account != null && !account.emailVarified}">
+      Study Cafe 에 가입을 완료하려면
+      <a href="#" th:href="@{/check-email}" class="alert-link">
+        계정 인증 메일을 확인
+      </a>하세요
+    </div>
+
+    th:if="${account != null && !account.emailVarified}
+      ㄴ 현재 인증된 사용자의 정보를 참조해서 실행됨
+
+- 프로필 기본 이미지 생성 <-- jdenticon
+    https://jdenticon.com/#icon-gobal
+
+npm install 로 라이브러리 설치하기
+  - npm install font-awesome@4.7.0
+  - npm install jdenticon@2.2.0
+
+  C:\Windows\system32>cd C:\workspace\springboot\global\src\main\resources\static
+
+  C:\workspace\springboot\global\src\main\resources\static>npm install font-awesome@4.7.0
+
+  added 1 package, and audited 5 packages in 556ms
+
+  2 packages are looking for funding
+    run `npm fund` for details
+
+  found 0 vulnerabilities
+
+  C:\workspace\springboot\global\src\main\resources\static>npm install jdenticon@2.2.0
+
+  added 3 packages, and audited 8 packages in 925ms
+
+  2 packages are looking for funding
+    run `npm fund` for details
+
+  found 0 vulnerabilities
+
+  C:\workspace\springboot\global\src\main\resources\static>
+
+
+fontawesome icon 사용
+  <i class="fa fa-OOOO"></i>
+
+Jdenticon 사용
+  <svg width="80" height="80" data-jdenticon-value="user127"></svg>
+
+Thymeleaf 조건문 사용하기
+  th:if
+  th:if="${account != null && !account.emailVarified}
+
+Bootstrap 으로 경고창 (modal 창) 띄우기
+- 이메일 인증을 완료하지 않은 사용자에게 메세지 띄우기
+    bootstrap modal 창  <-- index.html 에 아래 code 추가함
+
+
+[현재 인증된 사용자의 정보 참조하기]
+
+com.global.main.MainController 작성
+
+com.global.account.CurrentUser 작성
+
+@Retention(RetentionPolicy.RUNTIME)
+  AccountController Annotation 이
+  Runtime 에도 인식되도록 함
+
+@Target(ElementType.PARAMETER)
+  사용자가 만든 Annotation 이
+  부착될 수 있는 type  <-- PARAMETER 로 지정함
+
+
+Spring Security 의 Spring Web MVC 지원
+                              Model, View, Controller
+ <-- @AuthenticationPrincipal
+       ㄴ Handler parameter 로
+          현재 인증된 Principal 을 참조함
+                        ㄴ 인증할 때, Authentication 에 있는 첫 번째 parameter
+                                       ㄴ token 이 Authentication 으로 바뀜
+       ㄴ SpEL(Spring Expression Language : 스프링에서 사용하는 표현식) 을
+          사용해서 Principal 내부정보에 접근함
+       @AuthenticationPrincipal(expression = "#this" == 'anonymousUser' ? null : account")
+          ㄴ 익명(anonymousUser) 인 경우에는 null 로 설정하고
+             아닌 경우에는 account Property(멤버변수) 를 조회해서 설정하라는 의미
+
+
+public void login(Account account) {
+    UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
+인증할 때, Authentication 에 있는 첫 번째 parameter  <-- account.getNickName(),
+                                  ( ㄴ Principal )       account.getPassword(),
+                                                         List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                                                      );
+}
+
+@AuthenticationPrincipal(expression = "#this" == 'anonymousUser' ? null : account")
+  에서는 account Property(속성:멤버변수) 를 가져오는데
+  인증할 때, Authentication 에 있는 첫 번째 parameter(Principal) 는
+   account.getNickName() 이지, account 가 아님
+   ㄴ Account account 를 멤버변수로 하는 클래스(UserAccount)를 작성해야 함
+                                                 ㄴ com.global.account 패키지에 작성함
+
+public void login(Account account) {
+    UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
+인증할 때, Authentication 에 있는 첫 번째 parameter  <-- new UserAccount(account),  <-- 변경
+                                  ( ㄴ Principal )       account.getPassword(),
+                                                         List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                                                      );
+}
+
+public class UserAccount extends User 클래스의
+  private Account account;
+UserAccount 클래스의 멤버변수 이름 (account) 과
+
+@AuthenticationPrincipal(expression = "#this" == 'anonymousUser' ? null : account") 에서
+"#this" == 'anonymousUser' ? null : account"
+                                      ㄴ 이 부분이 일치해야 함
+
+
+[가입 확인 이메일 재전송]
+
+- 기입 확인 이메일을 재전송하는 기능
+- 1 시간에 한 번만 인증 이메일을 전송할 수 있도록 함
+
+GET"/checkout-email"
+  - 가입 확인 이메일을 전송한 메일 주소
+    (가입할 때 입력한 이메일 주소) 를 화면에 보여줌
+  - 재전송 버튼을 보여주고
+  - 재전송 버튼을 클릭하면 GET"/resend-confirm-email" 요청 전송함
+
+GET"/resend-confirm-email"
+  - 인증 메일을 다시 전송할 수 있는지 확인한 후
+  - 전송 가능하면 전송하고 첫 페이지로 redirect 함
+  - 전송할 수 없으면 에러 메세지를 Model 에 담고
+    이메일 확인 페이지를 다시 보여줌
+
+
+AccountController 에
+
+  @GetMapping("/checkout-email")  <-- 추가
+  public String checkoutEmail(@CurrentUser Account account, Model model){
+    model.addAttribute("email", account.getEmail());
+    return "account/checkout-email";
+  }
+
+  account/checkout-email.html 작성 : 아래의 두 가지 경우를 나누어서 작성함
+
+    <!-- error message 가 있는 경우 보여줄 화면 -->
+
+    <!-- error message 가 없는 경우 보여줄 화면 -->
+
+AccountController 에
+
+  // checkout-email.html 에서 인증 메일 다시 보내기 버튼 눌렀을 때
+  // 주소표시줄에 localhost:8080/resend-confirm-email URL 이 입력되면
+  // 자동으로 호출되는 메소드
+  @GetMapping("/resend-confirm-email")  <-- 추가
+  public String resendConfirmEmail(@CurrentUser Account account, Model model){
+    // 인증 메일을 1 시간 이내에 전송한 이력이 있다면 좀 기다렸다가 1 시간 지난 후 전송해야 함
+    if(!account.canSendConfirmEmail()){
+      model.addAttribute("error", "인증 이메일은 1 시간에 한 번만 전송 가능합니다.");
+      model.addAttribute("email", account.getEmail());
+      // 에러 메세지를 보여주고 같은 페이지를 다시 보여줌
+      return "account/checkout-email";
+    }
+     // 인증 메일을 1 시간 이내에 전송한 이력이 없다면 전송하고 첫 페이지로 이동함
+     accountService.sendSignUpConfirmEmail(account);
+     return "redirect:/";
+  }
+
+AccountController 클래스의 public String resendConfirmEmail() 메소드에서
+ accountService.sendSignUpConfirmEmail(account) 를 호출하려면
+  ㄴ AccountService 클래스에 있는 sendSignUpConfirmEmail(account) 메소드를 호출하려면
+     sendSignUpConfirmEmail(account) 메소드 의 접근제한자가 private 이면 안 됨
+      ㄴ 접근제한자를 public 으로 변경해서 AccountController 클래스에서 호출할 수 있도록 함
+
+
+인증 메일 전송이 한 시간 이내인 경우와
+한 시간 이내가 아닌 경우 모두 test 함
+
+
+AccountController 의
+public String resendConfirmEmail() 메소드에서
+
+return "redirect:/"; 한 이유
+  <-- 화면을 새로고침할 때마다
+      주소표시줄에 /resend-confirm-email 가 다시 나오면
+      계속 이메일을 재전송하게 됨
+      이를 방지하기 위함
+
+
+[로그인 / 로그아웃 기능 구현하기]
+
+1) 로그인 페이지 만들기
+
+   fragments.html 에
+   <script type="application/javascript" th:fragment="form-validation"> 설정하고
+
+   login.html 과
+   sign-up.html 에
+   <script th:replace="fragments.html :: form-validation"></script> 추가
+
+
+2) Spring Security 로 로그인/로그아웃 설정하기
+
+     // permitAll()  <-- 로그인 안 한 상태에서나 로그인한 상태에서 모두 접근 가능함
+     http.formLogin()
+         .loginPage("/login").permitAll();
+
+     // logoutSuccessUrl("/") <-- 로그아웃 하면 첫 페이지로 이동함
+     http.logout()
+         .logoutSuccessUrl("/");
+
+
+3) Spring Security 로그인 기본값
+  username
+  password
+  POST"/login"
+
+login.html 의 form 태그에 입력한
+로그인 정보(이메일(닉네임), 비밀번호 등)는
+Spring Security 가 자동으로 처리하므로
+이를 처리하기 위한 Handler 를 작성할 필요는 없음
+
+그런데,
+로그인할 때 입력하는 정보와
+DataBase 에 있는 정보를 비교하는 과정이 필요함
+DataBase 에 있는 정보를 조회하는 역할을 하는
+UserDetailsService 인터페이스를 구현하는 클래스를 작성해야 함
+  ㄴ 이미 작성해 놓은 AccountService 클래스가
+     UserDetailsService 인터페이스를 implements 하게 수정하고
+     관련 code 를 작성함
+
+public class AccountService implements UserDetailsService{
+
+  @Override
+  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    return null;
+  }
+
+}
+
+20230119
+
+
+// AccountService 클래스는 @Service 에 의해서
+// Bean 으로 등록되어 있음 (Bean : Spring 이 자동으로 생성하고 관리하는 객체)
+//  ㄴ UserDetailsService 를 상속하는 Bean 이 하나만 있으면
+//     Spring Security 에 별도로 설정하지 않아도 됨
+//       ㄴ Spring 이 자동으로 이  Bean (AccountService) 을 사용함
+//                 ㄴ login, logout 모두 자동으로 동작함
+public class AccountService implements UserDetailsService{
+
+  @Override
+  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+      // findByEmail() 로 email 로 로그인하는지 알아보기
+      Account account = accountRepository.findByEmail(emailOrNickName);
+      // email 로 로그인하는 것이 아니라면
+      // findByNickName() 로 nickName 으로 로그인하는지 알아보기
+      if(account == null){
+        account = accountRepository.findByNickName(emailOrNickName);
+                                       ㄴ 호출하려면 AccountRepository 인터페이스에
+                                          Account findByNickName(String nickName); 추가해야 함
+      }
+      return null;
+  }
+
+}
+
+가입하고 (자동로그인 됨)
+로그아웃하고
+가입할 때 입력한 이메일과 패스워드로
+로그인 되는지 확인함
+
+
+[로그인, 로그아웃 테스트하기]
+
+- form submit 에서 post 방식으로 request 하는 경우
+  .with(csrf()) 추가할 것
+- .andExpect(authenticated()) 나,
+  .andExpect(unauthenticated()) 를 사용해서
+  인증 여부를 확인함
+- redirect response 는,
+  .andExpect(status().is3xxRedirection()) 으로 확인함
+- redirect URL 은
+  .andExpect(redirectedUrl()) 로 확인함
+- JUnit5 의 @BeforeEach 와 @AfterEach 사용
+- 임의로 로그인한 user 의 경우에는
+  @WithMockUser 사용
+
+
+  com.global.main.MainController 에서
+  Shift + Ctrl + T 누르고 test 수행하기 (JUnit5 로 수행)
+
+  test 폴더에
+  com.global.main.MainControllerTest 클래스가 자동으로 만들어짐
+  @SpringBootTest
+  @AutoConfigureMockMvc
+  를 사용함
+
+  JUnit5 에서는 생성자를 사용한 dependency injection 은
+  사용할 수 없음                (의존성 주입)
+
+  생성자를 사용한 dependency injection
+  클래스 위에 @RequiredArgsConstructor 어노테이션 추가하고
+  private final MockMvc mockMvc; 로 선언하는 방식
+
+  @Autowired    <-- JUnit5 에서는 @AutoWired 방식으로만
+                    dependency injection 을 할 수 있음
+  MockMvc mockMvc;
+
+  @Test
+  void login_with_email() throws Exception{
+
+  }
+
+- Spring Security 로그인 기본값
+  username
+  password
+  POST"/login"
+
+Spring Security 로그인 기본값은  void login_with_email() 에서
+.param 설정할 때 사용하는 값임
+.param("username", "globaltest")
+.param("password", "12345678"))
+
+username, password 를 변경하려면
+com.global.config.SecurityConfig 에서
+아래와 같이 설정해야 함 <-- 설정하지 않으면 기본값을 사용해야 함
+http.formLogin()
+    .usernameParameter("name")
+    .passwordParameter("pw")
+    .loginPage("/login").permitAll();
+
+  @DisplayName("이메일로 로그인 성공 테스트")
+  @Test
+  void login_with_email() throws Exception{
+
+    // 아래의 정보에 해당하는 account 계정이 생성되고 저장됨
+    // 이메일도 전송함
+    SignUpForm signUpForm = new SignUpForm();
+    signUpForm.setNickName("globaltest");
+    signUpForm.setEmail("globaltest@gmail.com");
+    signUpForm.setPassword("12345678");
+    accountService.processNewAccount(signUpForm);
+
+    // post 방식으로 요청(/login)을 보내면
+    // Spring Security 가 로그인 처리를 해 줌
+    // 이메일로 로그인하려고
+    // param("username", "globaltest@gmail.com") 설정함
+    // Spring Security 를 사용하면, csrf 라는 protection 이 활성화되어 있음
+    //  .with(csrf())  <-- csrf token 을 같이 전송함
+    // .andExpect(authenticated().withUsername("globaltest"))
+    //   ㄴ globaltest 라는 username(nickName) 으로 인증됨
+    // 이메일이 아니라, nickName으로 인증됨
+    //  ㄴ UserAccount 클래스의 생성자에서
+    //     super(account.getNickName(),  <-- 이렇게 설정했으므로...
+    //             ㄴ username 부분을 nickName 으로 반환했음
+    mockMvc.perform(post("/login")
+           .param("username", "globaltest@gmail.com")
+           .param("password", "12345678")
+           .with(csrf()))
+           .andExpect(status().is3xxRedirection())
+           .andExpect(redirectedUrl("/"))
+           .andExpect(authenticated().withUsername("globaltest"));
+  }
+
+void login_with_email() 테스트함
+
+void login_with_email() 복사해서
+void login_with_nickName() 작성하고
+
+JUnit5 의 @BeforeEach 와 @AfterEach 작성함
+
+void login_with_email(), void login_with_nickName() 에서
+@BeforeEach 에 작성한 부분은 삭제함
+
+void login_with_email() 에서는
+.param("username", "globaltest@gmail.com")
+로 설정하고
+
+void login_with_nickName() 에서는
+.param("username", "globaltest")
+로 설정함
+
+MainControllerTest 클래스 전체를 실행함
+
+테스트 성공
+
+
+  @DisplayName("로그인 실패 테스트")
+  @Test
+  void login_fail() 메소드 작성하고 테스트해 봄
+
+  @DisplayName("로그아웃 테스트")
+  @Test
+  void logout()  메소드 작성하고 테스트해 봄
+
+templates/fragments.html 에서 로그아웃 버튼 부분을 보면 form submit 버튼으로 만들어져있음
+
+    <form class="from-inline my-2 my-lg-0" action="#" th:action="@{/logout}" method="post">
+      <button class="dropdown-item" type="submit">로그아웃</button>
+    </form>
+
+<-- form submit 버튼 : Spring Security 의 logout handler 가 자동으로 처리함
+
+  @WithMockUser  <-- 어노테이션을 추가하면
+  @DisplayName("로그아웃 테스트")
+  @Test
+  void logout()  메소드 작성하고 테스트해 봄
+
+@WithMockUser  <-- 어노테이션을 추가하면
+                   Spring Security 의 User type 에 해당하는 username 과 password 를
+                   (여기서는 Spring Security 의 User 를 상속항 UserAccount 객체)
+                   자동으로 넣어줌
+                   현재는 이 어노테이션을 추가하나 안 하나 결과는 동일함
+
+
+[session 이 만료되어도 login 유지하기]
+
+- cookie 에 인증 정보를 남겨두고
+  session 이 만료된 경우,  cookie 에 남아있는 정보로 인증함
+
+- hash 기반 cookie
+  - Username
+  - Password
+  - 만료 기간
+  - Key (application 마다 다른 값으로 설정함)
+  - cookie 를 관리하지 못해서 노출되면
+    다른 사람이 해당 계정을 사용할 수 있게 됨
+
+- cookie 를 잘 관리하려면...
+  - cookie 안에 random 한 문자열(token)을 만들어서 저장하고
+    인증할 때마다 변경함
+  - Username, token
+  - 그러나... 이 경우에도 cookie 가 노출되면
+              hacker 가 cookie 로 인증하게 되고
+              원래 계정 주인은 자기 cookie 로 인증하지 못하게 됨
+
+- 더 안전하게 하려면...
+  - Username, token(random 하게 변경함), series(random 하게 하고, 고정함)
+  - cookie 가 노출된 경우,
+    원래의 계정 주인은 유효하지 않은 token 과
+    유효한 series 와 Username 으로 접속하게 됨
+  - 이렇게 하면, 모든 token 을 삭제해서
+    hacker 가 가져간 cookie 를 사용하지 못하게 할 수 있음
+
+- Spring Security 설정  <-- Hash 기반 설정
+  - http.rememberMe().key(random 한 key 값)
+  - Spring Security 설정은 안전하고 영속화 기반의 설정임
+
+- 계정을 생성하고 로그인하면 JSessionID 가 생성됨
+  JSessionID : web browser 와 server 의 연결고리가 됨
+  server 쪽에 JSessionID 에 해당하는 객체가 없든지
+  client 가  해당 key 값을 보내지 않으면
+  현재 이 request 와 관련된 session 을 찾지 못함
+   ㄴ 해당 session 에 넣어놓은 정보는 의미가 없어짐
+  정상적으로 가입하고 인증된 사용자라고 해도
+  JSessionID 를 삭제하거나, server 를 끄고 다시 실행하면
+  server 의 memory 에서 관리하고 있던 JSessionID 가 삭제되면
+  로그인이 안 됨 (로그인 상태에 있다가도 로그인이 풀리게 됨)
+
+application.properties 설정
+Spring 은 session 유지 기본 시간이 30 분으로 설정되어 있음
+# server.servlet.session.timeout=30m
+
+com.global.config.SecurityConfig 클래스에서
+rememberMe 설정하기
+
+com.global.config.SecurityConfig 클래스 위에
+@RequiredArgsConstructor 어노테이션 추가하고
+멤버변수로
+private final AccountService accountService; 추가함
+
+http.logout()
+    .logoutSuccessUrl("/");
+밑에
+
+http.rememberMe()
+  .userDetailsService(accountService)
+  .tokenRepository(tokenRepository())
+설정하기
+
+Username, token, series 를 DB 에 저장하기 위해서                                ┌ tokenRepository()
+.tokenRepository(tokenRepository()) 에 DB 에서 token 값을 읽어오거나 저장하는 객체를 주입함
+                       |                         주입 <-- 메소드의 argument 로 넣어줌
+                       |
+           tokenRepository 의 구현체인
+JDBC 의 JdbcTokenRepositoryImpl(PersistentTokenRepository 인터페이스를 implements 한 클래스의 객체)를
+반환 받음
+tokenRepository() 메소드에서 사용하는
+jdbcTokenRepository.setDataSource(dataSource) 의 dataSource 객체는
+SecurityConfig 클래스의 멤버변수로 설정해서 Spring 으로부터 주입받음
+private final DataSource datasource;
+
+JdbcTokenRepositoryImpl 가 사용하는 table 은
+com.global.domain.PersistentLogins 클래스에 선언한 멤버변수로 이루어진
+Entity 를 보고 Spring 이 생성함  <-- PersistentLogins 클래스 작성해야 함
+
+login.html 에 checkbox 만들기  :  check box 에 체크하면 true 를 반환함
+                               : true 가 들어와야 로그인할 때 rememberMe cookie 를 만들어줌
+  <!-- 로그인 유지 checkbox -->
+  <div class="form-group form-check">
+    <input type="checkbox" class="form-check-input" id="rememberMe" name="remember-me" checked>
+    <label class="for-check-label" for="rememberMe" aria-describedby="rememberMeHelp">로그인 유지</label>
+  </div>
+
+로그인 유지 check box 를 체크하고 로그인하면
+JSESSIONID 와
+remember-me cookie 가 같이 생성됨
+session 이 만료되어 JSESSIONID 가 없어져도
+remember-me cookie 는 유지되므로
+페이지 새로고침을 하면
+JSESSIONID 가 다시 생성되고
+remember-me cookie 도 갱신됨
+  ㄴ 이러한 과정에 의해서 로그인이 유지됨
+
+
+[profile view 작성하기]
+
+- 정보가 있는 경우와 없는 경우에 따라서
+- 화면에 보여지는 내용이 다름
+- 현재의 user 가 profile 을 수정할 수 있는
+- 권한이 있는지 없는지 판단해서 화면을 보여줌
+
+com.global.account.AccountController 에
+메소드 추가하기
+@GetMapping("/profile/{nickName}")
+  public String viewProfile(@PathVariable String nickName,
+                            @CurrentUser Account account, Model model)
+
+account 폴더에 profile.html 작성
+
+
+[Session in View Filter]
+
+  Session  <-- Open EntityManager
+
+  JPA (Java Persistence API)
+   ㄴ Java 의 ORM 기술 표준
+              ㄴ Object Relational Mapping : DB 의 table 과  Java 객체를 Mapping 함
+
+Session(Open EntityManager) in View Filter
+  JAP 의 EntityManager(Persistence Context : 영속성 컨텍스트) 를
+  요청을 처리하는 전체 프로세스에 binding 시키는 filter
+  - view 를 rendering 할 때까지 영속성 컨텍스트를 유지하기 때문에
+    필요한 data 를 rendering 하는 시점에 추가로 읽어올 수 있음 (Lazy Loading : 지연로딩)
+  - Entity 객체 변경은 반드시 Transaction 안에서 해야 함
+     ㄴ Transaction 종료 직전이나 필요한 시점에 변경 사항을 DB 에 반영할 수 있기 때문
+
+  - Controller 에서 data 를 변경해도
+    Transaction 범위 밖에서 처리하면 DB 에 반영되지 않음
+
+  - Service 에서 Transaction 관리하는 방법  <-- data 를 변경하는 경우
+  - Repository 에서 Transaction 관리하는 방법  <-- data 를 조회하는 경우
+
+
+profile.html 에서
+"가입을 완료하시려면 이메일을 확인해 주세요." 를 클릭했을 때 처리하는 부분
+
+AccountController 클래스의
+@GetMapping("/check-email-token")
+  public String checkEmailToken(String token, String email, Model model) 메소드에서
+
+      account.completeSignUp();
+      accountService.login(account);
+        ㄴ  이 두 작업을 한 결과가 DB 에 반영되지 않아서
+            profile.html 에 들어갔을 때 가입 날짜가 나오지 않음
+      AccountService 클래스에 completeSignUp(account) 메소드를 작성해서
+      @Transactional 어노테이션을 설정해서
+      이 두 작업이 Transaction 안에서 진행되도록 해서
+      가입 날짜도 DB 에 반영되도록 함
+
+
+20230120
+
+1)
+Front-end 에서 js 연결 안 되는 문제 수정하기
+
+fragments.html 에서 아래 소스 수정함 src="/  <--  / 가 없었음
+ <script src="/node_modules/jquery/dist/jquery.min.js"></script>
+ <script src="/node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+2)
+회원가입하고 자동로그인 후 로그아웃하고 다시 로그인 할 때
+"status":999 error 해결하기
+
+com.global.config.SecurityConfig 클래스에서
+public void configure(WebSecurity web) 메소드에
+  .antMatchers("/favicon.ico", "/resources/**", "/error")  <-- 추가하기
+
+
+위 내용 수정하고 프로젝트 테스트해 보기
+
+
+[Profile View 화면 작성 2]
+
+com.global.settings.SettingsController 에서...
+  Bio, Link, Occupation, Location
+  정보들을 이력받아서 Profile 정보를 수정함
+
+com.global.settings.Profile 클래스 작성
+
+templates / settings 폴더에
+profile.html 작성함
+
+
+[프로필 수정 버튼 눌렀을 때 일어나는 일]
+
+templates / account 폴더에 있는
+profile.html 파일에 아래 code 추가함
+
+  <p th:if="${isCurrentUser}">
+    <a class="btn btn-outline-primary" href="#" th:href="@{/settings/profile}">프로필 수정</a>
+  </p>
+
+th:href="@{/settings/profile} 에 의해서 Controller 클래스의 메소드 중에서
+@GetMapping("/settings/profile") 어노테이션이 있는 메소드를 찾아감
+(현재 @Controller 어노테이션이 붙은 클래스는
+ com.global.account.AccountController 클래스와
+ com.global.settings.SettingsController 클래스임
+   ㄴ 이 두 클래스를 다 살펴서  @GetMapping("/settings/profile") 어노테이션이 있는 메소드를 찾아감)
+
+ com.global.settings.SettingsController 클래스의
+  @GetMapping("/settings/profile")
+  public String profileUpdateForm(@CurrentUser Account account, Model model) 메소드를 찾음
+  model.addAttribute(account);
+  model.addAttribute(new Profile(account));
+    ㄴ 이 두 작업을 하고나서
+  return "settings/profile" 에 지정되어 있는
+  즉, templates/settings 폴더에 있는 profile.html 을 화면에 보여줌
+
+
+account/check-email.html
+body 밑 부분에 있던
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js" integrity="sha384-+sLIOodYLS7CIrQpBjl+C7nPvqq+FbNUBDunl/OZv93DB7Ln/533i8e/mZXLi/P+" crossorigin="anonymous"></script>
+
+이 code 삭제함
+(이 code 가 있으면 <head th:replace="fragments.html :: head"></head> 과 중복되어서 오류 발생함)
+
+
+[프로필 수정 처리하기]
+
+- 기존에 저장된 값을 삭제할 수도 있기 때문에 비어 있는 값을 허용함
+- 입력값의 길이를 고려해서 처리함
+
+
+form 처리
+- error 가 있는 경우에는 form 을 다시 보여줌
+- error 가 없는 경우
+  - 저장함
+  - 프로필 수정 페이지를 다시 보여줌 (리다이렉트)
+  - 수정 완료했다는 메세지 보여주기
+
+- redirect 할 때 data(간단한 data) 전송 방법
+  : "프로필이 수정되었습니다." 라는 메세지 전송하기
+  - RedirectAttributes.addFlashAttribute() 를 호출함
+     ㄴ updateProfile() 메소드의 파라미터에
+        RedirectAttributes redirectAttributes 를 추가함
+
+
+
+com.global.settings.SettingsController 클래스에
+
+public String updateProfile() 메소드 추가하기
+update 작업을 하고나서
+accountRepository.save(account); 이 code 를 실행해 주어야
+update 한 내용이 DB 에 반영됨
+
+
+
+[프로필 수정 기능 테스트하기]
+
+인증된 사용자만 접근할 수 있는 기능을 테스트함
+  - DB 에 실제로 저장되어 있는 정보에 대한 인증된 Authentication 이 있어야 함
+  - @WithMockUser  어노테이션만으로는 처리할 수 없음
+
+인증된 사용자를 제공하는 Custom Annotation 을 작성함
+  - @WithAccount
+
+test 폴더 밑에 com.global 폴더에 작성함
+Custom Annotation 작성
+@Retention(RetentionPolicy.RUNTIME)
+@WithSecurityContext(factory=WithAccountSecurityContextFactory.class)
+public @interface WithAccount{
+  String value();
+}
+
+SecurityContextFactory 구현하기
+  ㄴ WithSecurityContextFactory<WithAccount> 를 implements 하는 클래스를 작성함
+       ㄴ public class WithAccountSecurityContextFactory ...
+
+       Bean 을 주입 받아서
+       Authentication 작성하고 SecurityContext 에 넣음
+
+
+https://docs.spring.io/spring-security/site/docs/5.2.x/reference/html/test.html 문서 참고
+
+
+SettingsControllerTest 에서 updateProfile() 메소드에
+@WithUserDetails("global") 사용하기
+
+test 폴더 밑에 com.global 폴더에 작성함
+public class WithAccountSecurityContextFactory
+
+
+
+20230125
+
+SettingsControllerTest 클래스에
+
+프로필 수정 테스트 - 입력값에 오류가 있는 경우
+void updateProfile_error(),
+
+"프로필 수정 폼 테스트"
+void updateProfileForm()
+
+두 개의 메소드 추가하고 테스트 진행함
+
+
+[프로필 view 에서 사진 변경하기]
+
+화면에 입력하는 data 가 하나 추가되므로
+Profile 클래스에 멤버변수 하나 추가함
+  ㄴ private String profileImage;
+     생성자에도 추가함
+     this.profileImage = account.getProfileImage();
+
+settings/profile.html 에 div 태그 추가하기
+<!--
+ 사용자가 직접 입력하지 않고, cropper.js 사용하기
+  ㄴ npm install 로 cropper.js 설치해야 함
+  npm install cropper@4.1.0
+  npm install jquery-cropper@1.0.1
+-->
+<div class="form-group">
+  <input id="profileImage" type="hidden" th:field="*{profileImage}" class="from-control" />
+</div>
+
+BootStrap 에서 Card View 사용하기
+https://getbootstrap.com/docs/4.6/components/card/ 참고
+
+
+
+settings/profile.html 에
+javascript 작성
+
+profileImage 변경사항 DB 에 반영하기 위해서
+AccountService 의 public void updateProfile() 메소드에
+
+account.setProfileImage(profile.getProfileImage()); 추가
+
+네비게이션 오른쪽 끝에 작은 profileImage 도
+수정한 image 가 반영되도록
+fragments.html code 수정함
+
+<!-- account?. : user 가 null 이 아닌 경우를 의미함 -->
+<!-- profileImage 가 없으면 jdenticon 을 보여주고 -->
+<svg th:if="${#strings.isEmpty(account?.profileImage)}" data-jdenticon-value="user127"
+     th:data-jdenticon-value="${#authentication.name}" width="24" height="24" />
+<!-- profileImage 가 있으면 profileImage 를 보여줌 -->
+<img th:if="${!#strings.isEmpty(account?.profileImage)}" th:src="${account.profileImage}"
+    width="24" height="24" class="rounded border"/>
+
+
+[비밀번호 수정하기]
+
+비밀번호 변경을 위한 View 작성하기
+
+비밀번호 변경
+  - 비밀번호 탭 활성화하기
+  - 새로운 비밀번호와 새로운 비밀번호 확인 값이 일치해야 함
+  - 비밀번호 encoding
+  - 최소 8 자에서 최대 50자 이내
+  - 사용자 정보 변경하기
+    - 서비스로 위임해서 Transaction 안에서 처리하거나
+    - Detached 상태의 객체를 변경한 후 Repository 의 save 를 호출해서
+      상태 변경 내역을 적용함(Merge)
+
+SettingsController 클래스에서
+static final String SEETINGS_PASSWORD_VIEW = "settings/password";
+static final String SEETINGS_PASSWORD_URL = "settings/password";
+
+@GETMapping("SEETINGS_PASSWORD_URL")
+public String passwordUpdateForm() 메소드
+추가
+
+Form 으로 사용할 객체가 없음 -> Form 으로 사용할 클래스 작성하기
+com.global.settings.PasswordForm 클래스 작성함
+  @Length(min=8, max=50)
+  private String newPassword;
+  @Length(min=8, max=50)
+  private String newPasswordConfirm;
+
+새로운 비밀번호와 새로운 비밀번호 확인번호가 맞는지
+유효성 검사하는 클래스도 작성함
+com.global.settings.PasswordFormValidator
+
+SettingsController 에서
+@GetMapping(SETTINGS_PASSWORD_URL)
+public String updatePasswordForm()  메소드 작성함
+accountService.updatePassword() 를 호출한 뒤
+SETTINGS_PASSWORD_URL(/settings/password) 로 redirect 함
+
+
+settings/password.html 작성하기
+
+settings/profile.html 파일 편집함
+
+
+[비밀번호 수정 테스트하기]
+
+SettingsControllerTest 클래스에
+
+updatePassword_success(), updatePassword_fail() 메소드 작성하기
+
+settings/password.html code 수정 : currentMenu='password'
+<div class="col-2">
+  <div th:replace="fragments.html :: settings-menu (currentMenu='password')"></div>
+</div>
 
 
 

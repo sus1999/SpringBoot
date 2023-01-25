@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="fragments.html :: head"></head>
+<body class="bg-light">
+  <nav th:replace="fragments.html :: main-nav"></nav>
+  <div class="alert alert-warning" role="alert" th:if="${account != null && !account.emailVerified}">
+    Study Cafe 에 가입을 완료하려면
+    <a href="#" th:href="@{/checkout-email}" class="alert-link">
+      계정 인증 메일을 확인
+    </a>하세요
+  </div>
+
+<div class="container">
+  <div class="py-5 text-center">
+    <h2>Study Cafe</h2>
+  </div>
+
+  <div th:replace="fragments.html :: footer"></div>
+
+</div>
+
+
+
+ </body>
+</html>
